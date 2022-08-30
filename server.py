@@ -34,15 +34,16 @@ pageTemplate = '''
 <script>
     function deleta_item() {{
         var target = event.target.parentNode.parentNode;
+        target.parentNode.removeChild(target);
         var id = target.id;
         deleted = id;
         console.log(deleted);
-        fetch('/' + id, {{
-            method: 'DELETE' 
+        fetch(id, {{
+            method: 'DELETE', 
         }})
     }}
 </script>
-</html>'''  # NEW note '{person}' two lines up
+</html>'''
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -57,42 +58,38 @@ def request_handler(req):
 
     if req[0] == 'GET':
         contents = pageTemplate.format(**locals())
-        resp = ('HTTP/1.1 200 OK\r\n' + 'Content-Type: text/html\r\n' + 'Content-Length: ' + str(
-            len(contents)) + '\r\n\r\n' + contents)
+
     elif req[0] == 'POST':
         form = req[-1].split('=')[1]  # DADO DO FORMULÁRIO
         # print(form)
         itens.append(form)
         for item in itens:
             if item:
-                #  tabela += f'<tr><th>{item}<button onclick="deleta_item()">Delete</button></th></tr>'
                 tabela.append(item)
         contents = pageTemplate.format(**locals())
-        resp = ('HTTP/1.1 200 Ok\r\n' + 'Content-Type: text/html\r\n' + 'Content-Length: ' + str(
-            len(contents)) + '\r\n\r\n' + contents)
-        # print(itens)
+
     elif req[0] == 'DELETE':
         deleted = req[1][1:]
-        print(itens)
-        print('DELETED = ' + deleted)
         itens.remove(deleted)
         tabela = []
         for item in itens:
             if item:
                 tabela.append(item)
-        print(tabela)
         contents = pageTemplate.format(**locals())
-        resp = ('HTTP/1.1 200 Ok\r\n' + 'Content-Type: text/html\r\n' + 'Content-Length: ' + str(
-            len(contents)) + '\r\n\r\n' + contents)
+    else:
+        resp = 'HTTP/1.1 404 Page not found'
+
+    resp = ('HTTP/1.1 200 Ok\r\n' + 'Content-Type: text/html\r\n' + 'Content-Length: ' + str(
+        len(contents)) + '\r\n\r\n' + contents)
     return resp
 
 
 while True:
     client_connection, client_address = s.accept()
     request = client_connection.recv(1024).decode()
-    # print(request)
+    print(request)
     response = request_handler(request)
-    print(response)
+    # print(response)
     client_connection.sendall(response.encode())
     client_connection.close()
 
