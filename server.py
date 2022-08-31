@@ -25,7 +25,8 @@ pageTemplate = '''
         <script>
             var itens = {tabela};
             for(var i=0; i < itens.length; i++) {{
-                document.write('<tr id="' + itens[i] + '"><th>' + itens[i] + '<button onclick="deleta_item()"> \
+                document.write('<tr id="' + itens[i] + \
+                '"><th>' + itens[i] + '<button onclick="deleta_item()"> \
                 Delete</button></th></tr>');
             }}
         </script>
@@ -43,12 +44,19 @@ pageTemplate = '''
         }})
     }}
 </script>
+<script>
+if ( window.history.replaceState ) {{
+  window.history.replaceState( null, null, window.location.href );
+}}
+</script>
 </html>'''
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 s.bind(('', 8000))
 s.listen(10)
+
+
 itens = []
 
 
@@ -57,27 +65,26 @@ def request_handler(req):
     tabela = []
 
     if req[0] == 'GET':
-        contents = pageTemplate.format(**locals())
+        contents = pageTemplate.format(tabela=tabela)
 
     elif req[0] == 'POST':
         form = req[-1].split('=')[1]  # DADO DO FORMULÁRIO
-        # print(form)
+        # vem no formato "IDdoformulario=dado"
         itens.append(form)
         for item in itens:
             if item:
                 tabela.append(item)
-        contents = pageTemplate.format(**locals())
+        contents = pageTemplate.format(tabela=tabela)
 
     elif req[0] == 'DELETE':
         deleted = req[1][1:]
         itens.remove(deleted)
-        tabela = []
         for item in itens:
             if item:
                 tabela.append(item)
-        contents = pageTemplate.format(**locals())
+        contents = pageTemplate.format(tabela=tabela)
     else:
-        resp = 'HTTP/1.1 404 Page not found'
+        return 'HTTP/1.1 400 Bad request'
 
     resp = ('HTTP/1.1 200 Ok\r\n' + 'Content-Type: text/html\r\n' + 'Content-Length: ' + str(
         len(contents)) + '\r\n\r\n' + contents)
